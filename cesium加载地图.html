@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="data:,">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加载地图</title>
+    <script src="../../libs/cesium/Build/Cesium/Cesium.js"></script> 
+    <link href="../../libs/Cesium/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        div,body{
+            padding: 0;
+            margin: 0;
+        }
+        .cesium-widget-credits{
+            display: none !important;
+        }
+        /* 添加控制按钮样式 */
+        .control-button {
+            position: absolute;
+            top: 350px;
+            background: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 999;
+        }
+        .control-button:hover {
+            background: #eee;
+        }
+        #rotateButton {
+            right: 10px;
+            top:90px
+        }
+        #stopButton {
+            right: 100px;
+            top:90px
+        }
+        #nanningButton {
+            right: 10px;
+            top:50px
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer" style="width:100%;height:100%;"></div>
+    <!-- 添加控制按钮 -->
+    <button id="rotateButton" class="control-button">开始旋转</button>
+    <button id="stopButton" class="control-button">停止旋转</button>
+    <button id="nanningButton" class="control-button">南宁示范大学武鸣校区</button>
+    
+    <script type="text/javascript">
+        // 创建Cesium Viewer实例
+        var viewer = new Cesium.Viewer('cesiumContainer',{
+            // geocoder: false,
+            // homeButton: false,
+            animation: false,
+            // fullscreenButton: false,
+            // sceneModePicker: false,
+            timeline: false,
+            // navigationHelpButton: false,
+            // baseLayerPicker: false
+        });
+    //     var esri = new Cesium.ArcGisMapServerImageryProvider({
+    //     url:'https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9'
+    //     })
+        // 旋转相关变量
+        var rotateActive = false;
+        var rotateRate = 0.2; // 旋转速度（度/帧）
+        var previousTime = 0;
+        
+        // 开始旋转函数
+        function startRotation() {
+            if (!rotateActive) {
+                rotateActive = true;
+                // 启用时钟循环
+                viewer.clock.onTick.addEventListener(rotateGlobe);
+                // 设置初始时间
+                previousTime = Date.now();
+            }
+        }
+        
+        // 停止旋转函数
+        function stopRotation() {
+            if (rotateActive) {
+                rotateActive = false;
+                // 移除时钟事件监听
+                viewer.clock.onTick.removeEventListener(rotateGlobe);
+            }
+        }
+        
+        // 旋转地球函数
+        function rotateGlobe() {
+            if (rotateActive) {
+                var currentTime = Date.now();
+                var deltaTime = currentTime - previousTime;
+                previousTime = currentTime;
+                
+                // 计算旋转角度（基于时间差）
+                var rotationAngle = Cesium.Math.toRadians(rotateRate * deltaTime / 16);
+                
+                // 获取当前相机位置和方向
+                var camera = viewer.camera;
+                var currentPosition = camera.position;
+                var currentHeading = camera.heading;
+                
+                // 更新相机方向（绕地球中心旋转）
+                camera.setView({
+                    orientation: {
+                        heading: currentHeading + rotationAngle,
+                        pitch: camera.pitch,
+                        roll: camera.roll
+                    }
+                });
+            }
+        }
+        // 按钮事件绑定
+        document.getElementById('rotateButton').addEventListener('click', startRotation);
+        document.getElementById('stopButton').addEventListener('click', stopRotation);
+        document.getElementById('nanningButton').addEventListener('click', function() {
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(108.180627, 23.185915, 1500)
+            });
+        });
+        
+        // 初始设置：调整视角到合适位置
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(0, 0, 20000000),
+            orientation: {
+                heading: 0,
+                pitch: -Cesium.Math.PI_OVER_TWO,
+                roll: 0
+            }
+        });
+        
+        // 空间加载数据 - 修复后的代码
+        var position = Cesium.Cartesian3.fromDegrees(108.180627, 23.185915, 0);
+        var entity = viewer.entities.add({
+            position: position,
+            point: {
+                pixelSize: 20,
+                color: Cesium.Color.RED.withAlpha(0.8),
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 2
+            },
+            label: {
+                text: "南宁师范大学武鸣校区",
+                font: '14pt sans-serif',
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                outlineWidth: 2,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                pixelOffset: new Cesium.Cartesian2(0, -10)
+            }
+        });
+    </script>
+</body>
+</html>
